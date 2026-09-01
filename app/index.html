@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f2a24">
+<title>زبدة الأوراد وعمدة الإسعاد</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg:#0f2a24;
+    --bg2:#153b32;
+    --gold:#c9a24b;
+    --paper:#f5efdf;
+    --text:#f2ead6;
+    --muted:#9fb8ae;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; margin:0; overscroll-behavior:none;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Traditional Arabic','Segoe UI',Tahoma,sans-serif;
+    display:flex; flex-direction:column;
+    height:100dvh;
+    overflow:hidden;
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px; padding-top:calc(10px + env(safe-area-inset-top));
+    background:var(--bg2);
+    border-bottom:1px solid rgba(201,162,75,0.35);
+    z-index:20;
+  }
+  header .title{
+    font-size:15px; font-weight:600; color:var(--gold);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:55%;
+  }
+  header .icon-btn{
+    background:none; border:none; color:var(--text);
+    font-size:20px; padding:6px 10px; cursor:pointer; border-radius:8px;
+  }
+  header .icon-btn:active{background:rgba(255,255,255,0.08);}
+  .icon-group{display:flex; gap:2px;}
+
+  #viewer{
+    flex:1; position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:pan-y;
+    background:radial-gradient(ellipse at center, #163a32 0%, #0f2a24 80%);
+  }
+  #pageImgWrap{
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 0.08s ease-out;
+  }
+  #pageImg{
+    max-width:96%; max-height:96%;
+    box-shadow:0 6px 24px rgba(0,0,0,0.5);
+    border-radius:4px;
+    background:var(--paper);
+    user-select:none; -webkit-user-drag:none;
+    touch-action:none;
+  }
+  .tap-zone{
+    position:absolute; top:0; bottom:0; width:26%;
+  }
+  .tap-zone.left{left:0;}
+  .tap-zone.right{right:0;}
+
+  #pageIndicator{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.45); color:var(--text);
+    font-size:12px; padding:4px 12px; border-radius:20px;
+    pointer-events:none; letter-spacing:0.5px;
+  }
+
+  footer{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 14px; padding-bottom:calc(8px + env(safe-area-inset-bottom));
+    background:var(--bg2); border-top:1px solid rgba(201,162,75,0.35);
+  }
+  footer button{
+    flex:1; background:var(--gold); color:#20140a; border:none;
+    padding:11px 0; border-radius:10px; font-size:14px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  footer button:active{filter:brightness(0.9);}
+  footer button:disabled{opacity:0.35;}
+  footer .pagejump{
+    width:64px; flex:none; background:var(--bg); color:var(--text);
+    border:1px solid rgba(201,162,75,0.4); text-align:center; font-weight:600;
+  }
+
+  /* Panels */
+  .panel-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    z-index:40; opacity:0; pointer-events:none; transition:opacity 0.2s;
+  }
+  .panel-overlay.open{opacity:1; pointer-events:auto;}
+  .panel{
+    position:fixed; top:0; bottom:0; right:0; width:86%; max-width:360px;
+    background:var(--bg2); z-index:41; transform:translateX(100%);
+    transition:transform 0.25s ease; display:flex; flex-direction:column;
+    box-shadow:-8px 0 24px rgba(0,0,0,0.4);
+  }
+  .panel.open{transform:translateX(0);}
+  .panel-header{
+    padding:14px 16px; padding-top:calc(14px + env(safe-area-inset-top));
+    border-bottom:1px solid rgba(201,162,75,0.3);
+    display:flex; justify-content:space-between; align-items:center;
+    color:var(--gold); font-weight:700; font-size:16px;
+  }
+  .panel-body{flex:1; overflow-y:auto; padding:8px 0;}
+  .toc-item{
+    padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex; justify-content:space-between; align-items:center;
+    cursor:pointer; font-size:15px;
+  }
+  .toc-item:active{background:rgba(255,255,255,0.06);}
+  .toc-item .pg{color:var(--muted); font-size:13px;}
+
+  #searchPanel .panel-header{gap:8px;}
+  #searchInput{
+    flex:1; background:var(--bg); border:1px solid rgba(201,162,75,0.4);
+    color:var(--text); padding:8px 12px; border-radius:8px; font-size:15px;
+    font-family:inherit;
+  }
+  .search-hint{padding:16px; color:var(--muted); font-size:13px; text-align:center;}
+  .result-item{
+    padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); cursor:pointer;
+  }
+  .result-item .pg{color:var(--gold); font-size:12px; margin-bottom:4px; display:block;}
+  .result-item .snippet{font-size:14px; line-height:1.7; color:var(--text);}
+  .result-item mark{background:var(--gold); color:#20140a; border-radius:2px; padding:0 2px;}
+  .result-item:active{background:rgba(255,255,255,0.06);}
+
+  #loading{
+    position:fixed; inset:0; background:var(--bg); z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  }
+  #loading .spinner{
+    width:40px; height:40px; border-radius:50%;
+    border:3px solid rgba(201,162,75,0.25); border-top-color:var(--gold);
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loading p{color:var(--muted); font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>جاري تحميل الكتاب…</p></div>
+
+<header>
+  <div class="icon-group">
+    <button class="icon-btn" id="btnToc" title="الفهرس">☰</button>
+    <button class="icon-btn" id="btnSearch" title="بحث">🔍</button>
+  </div>
+  <div class="title">زبدة الأوراد وعمدة الإسعاد</div>
+  <div class="icon-group">
+    <button class="icon-btn" id="btnBookmark" title="حفظ الصفحة">☆</button>
+  </div>
+</header>
+
+<div id="viewer">
+  <div id="pageImgWrap">
+    <img id="pageImg" src="" alt="page">
+  </div>
+  <div class="tap-zone left" id="zoneLeft"></div>
+  <div class="tap-zone right" id="zoneRight"></div>
+  <div id="pageIndicator">1 / 160</div>
+</div>
+
+<footer>
+  <button id="btnPrev">◀ السابقة</button>
+  <input class="pagejump" id="pageJump" inputmode="numeric" value="1">
+  <button id="btnNext">التالية ▶</button>
+</footer>
+
+<div class="panel-overlay" id="overlay"></div>
+
+<div class="panel" id="tocPanel">
+  <div class="panel-header"><span>الفهرس</span><button class="icon-btn" id="closeToc">✕</button></div>
+  <div class="panel-body" id="tocList"></div>
+</div>
+
+<div class="panel" id="searchPanel">
+  <div class="panel-header" style="gap:8px;">
+    <input id="searchInput" placeholder="ابحث في الكتاب…">
+    <button class="icon-btn" id="closeSearch">✕</button>
+  </div>
+  <div class="panel-body" id="searchResults"><div class="search-hint">اكتب كلمة أو جملة للبحث داخل النص</div></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var total = TOTAL_PAGES;
+  var current = parseInt(localStorage.getItem('zubda_lastpage')) || 1;
+  if(current < 1 || current > total) current = 1;
+
+  var img = document.getElementById('pageImg');
+  var indicator = document.getElementById('pageIndicator');
+  var jumpInput = document.getElementById('pageJump');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  var loading = document.getElementById('loading');
+
+  function pad(n){ return String(n).padStart(3,'0'); }
+
+  function render(save){
+    img.src = 'images/page-' + pad(current) + '.jpg';
+    indicator.textContent = current + ' / ' + total;
+    jumpInput.value = current;
+    btnPrev.disabled = current <= 1;
+    btnNext.disabled = current >= total;
+    updateBookmarkIcon();
+    if(save !== false) localStorage.setItem('zubda_lastpage', current);
+  }
+
+  // RTL book: "next" (forward in reading order) = higher page number.
+  function goNext(){ if(current < total){ current++; render(); } }
+  function goPrev(){ if(current > 1){ current--; render(); } }
+  function goTo(n){
+    n = Math.max(1, Math.min(total, n));
+    current = n; render();
+  }
+
+  btnNext.addEventListener('click', goNext);
+  btnPrev.addEventListener('click', goPrev);
+
+  // Tap zones: in RTL, right side = start/previous page, left side = forward/next page
+  document.getElementById('zoneRight').addEventListener('click', goPrev);
+  document.getElementById('zoneLeft').addEventListener('click', goNext);
+
+  jumpInput.addEventListener('change', function(){
+    var n = parseInt(jumpInput.value);
+    if(!isNaN(n)) goTo(n);
+  });
+  jumpInput.addEventListener('focus', function(){ jumpInput.select(); });
+
+  // Swipe gestures
+  var startX = null, startY = null;
+  var viewer = document.getElementById('viewer');
+  viewer.addEventListener('touchstart', function(e){
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+  }, {passive:true});
+  viewer.addEventListener('touchend', function(e){
+    if(startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    if(Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)*1.5){
+      if(dx < 0) goNext(); else goPrev();
+    }
+    startX = null; startY = null;
+  }, {passive:true});
+
+  // Double-tap to zoom
+  var wrap = document.getElementById('pageImgWrap');
+  var lastTap = 0, zoomed = false;
+  viewer.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if(now - lastTap < 300){
+      zoomed = !zoomed;
+      wrap.style.transform = zoomed ? 'scale(2)' : 'scale(1)';
+    }
+    lastTap = now;
+  });
+
+  // Bookmark
+  function updateBookmarkIcon(){
+    var bm = localStorage.getItem('zubda_bookmark');
+    document.getElementById('btnBookmark').textContent = (bm && parseInt(bm) === current) ? '★' : '☆';
+  }
+  document.getElementById('btnBookmark').addEventListener('click', function(){
+    var bm = localStorage.getItem('zubda_bookmark');
+    if(bm && parseInt(bm) === current){
+      localStorage.removeItem('zubda_bookmark');
+    } else {
+      localStorage.setItem('zubda_bookmark', current);
+    }
+    updateBookmarkIcon();
+  });
+
+  // Panels
+  var overlay = document.getElementById('overlay');
+  var tocPanel = document.getElementById('tocPanel');
+  var searchPanel = document.getElementById('searchPanel');
+
+  function openPanel(p){ p.classList.add('open'); overlay.classList.add('open'); }
+  function closeAll(){
+    tocPanel.classList.remove('open');
+    searchPanel.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+  overlay.addEventListener('click', closeAll);
+  document.getElementById('btnToc').addEventListener('click', function(){ openPanel(tocPanel); });
+  document.getElementById('closeToc').addEventListener('click', closeAll);
+  document.getElementById('btnSearch').addEventListener('click', function(){
+    openPanel(searchPanel);
+    setTimeout(function(){ document.getElementById('searchInput').focus(); }, 200);
+  });
+  document.getElementById('closeSearch').addEventListener('click', closeAll);
+
+  // Build TOC list, with bookmark + start entries
+  var tocList = document.getElementById('tocList');
+  function buildToc(){
+    tocList.innerHTML = '';
+    var bm = localStorage.getItem('zubda_bookmark');
+    if(bm){
+      var bmItem = document.createElement('div');
+      bmItem.className = 'toc-item';
+      bmItem.innerHTML = '<span>★ العلامة المحفوظة</span><span class="pg">' + bm + '</span>';
+      bmItem.addEventListener('click', function(){ goTo(parseInt(bm)); closeAll(); });
+      tocList.appendChild(bmItem);
+    }
+    TOC.forEach(function(section){
+      var item = document.createElement('div');
+      item.className = 'toc-item';
+      item.innerHTML = '<span>' + section.title + '</span><span class="pg">' + section.page + '</span>';
+      item.addEventListener('click', function(){ goTo(section.page); closeAll(); });
+      tocList.appendChild(item);
+    });
+  }
+
+  // Search
+  var searchInput = document.getElementById('searchInput');
+  var searchResults = document.getElementById('searchResults');
+  var searchTimer = null;
+
+  function normalizeQuery(q){
+    return q.replace(/[\u064B-\u0652\u0670]/g,'') // strip tashkeel
+            .replace(/[إأآا]/g,'ا')
+            .replace(/ى/g,'ي')
+            .replace(/ة/g,'ه')
+            .trim();
+  }
+
+  function doSearch(q){
+    q = q.trim();
+    if(q.length < 2){
+      searchResults.innerHTML = '<div class="search-hint">اكتب كلمة أو جملة للبحث داخل النص</div>';
+      return;
+    }
+    var nq = normalizeQuery(q);
+    var results = [];
+    for(var p = 1; p <= total; p++){
+      var text = PAGE_TEXT[p] || PAGE_TEXT[String(p)] || '';
+      if(!text) continue;
+      var ntext = normalizeQuery(text);
+      var idx = ntext.indexOf(nq);
+      if(idx !== -1){
+        var start = Math.max(0, idx - 40);
+        var end = Math.min(text.length, idx + nq.length + 40);
+        var snippet = (start > 0 ? '…' : '') + text.substring(start, end).replace(/\n/g,' ') + (end < text.length ? '…' : '');
+        results.push({page:p, snippet:snippet});
+      }
+      if(results.length >= 60) break;
+    }
+    if(results.length === 0){
+      searchResults.innerHTML = '<div class="search-hint">لا توجد نتائج</div>';
+      return;
+    }
+    searchResults.innerHTML = '';
+    results.forEach(function(r){
+      var el = document.createElement('div');
+      el.className = 'result-item';
+      el.innerHTML = '<span class="pg">صفحة ' + r.page + '</span><span class="snippet">' + escapeHtml(r.snippet) + '</span>';
+      el.addEventListener('click', function(){ goTo(r.page); closeAll(); });
+      searchResults.appendChild(el);
+    });
+  }
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  searchInput.addEventListener('input', function(){
+    clearTimeout(searchTimer);
+    var v = searchInput.value;
+    searchTimer = setTimeout(function(){ doSearch(v); }, 200);
+  });
+
+  buildToc();
+  render(false);
+
+  // Preload neighboring pages
+  function preload(n){
+    if(n < 1 || n > total) return;
+    var i = new Image();
+    i.src = 'images/page-' + pad(n) + '.jpg';
+  }
+  img.addEventListener('load', function(){
+    preload(current+1); preload(current-1);
+    loading.style.display = 'none';
+  });
+  img.addEventListener('error', function(){ loading.style.display = 'none'; });
+
+  // Service worker
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
