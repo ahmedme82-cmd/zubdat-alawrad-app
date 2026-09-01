@@ -58,11 +58,16 @@
   }
   #pageImg{
     max-width:96%; max-height:96%;
-    box-shadow:0 6px 24px rgba(0,0,0,0.5);
-    border-radius:4px;
+    box-shadow:0 8px 28px rgba(0,0,0,0.55);
+    border-radius:6px;
     background:var(--paper);
     user-select:none; -webkit-user-drag:none;
     touch-action:none;
+    opacity:1; transform:scale(1);
+    transition:opacity 0.16s ease, transform 0.16s ease;
+  }
+  #pageImg.leaving{
+    opacity:0; transform:scale(0.97);
   }
   .tap-zone{
     position:absolute; top:0; bottom:0; width:26%;
@@ -84,15 +89,19 @@
   }
   footer button{
     flex:1; background:var(--gold); color:#20140a; border:none;
-    padding:11px 0; border-radius:10px; font-size:14px; font-weight:700;
+    padding:11px 0; border-radius:12px; font-size:14px; font-weight:700;
     display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
   }
-  footer button:active{filter:brightness(0.9);}
+  footer button:active{filter:brightness(0.88); transform:scale(0.96);}
   footer button:disabled{opacity:0.35;}
   footer .pagejump{
     width:64px; flex:none; background:var(--bg); color:var(--text);
     border:1px solid rgba(201,162,75,0.4); text-align:center; font-weight:600;
+    border-radius:12px;
   }
+  header .icon-btn{transition:transform 0.12s ease, background 0.12s ease;}
+  header .icon-btn:active{transform:scale(0.9);}
 
   /* Panels */
   .panel-overlay{
@@ -103,7 +112,7 @@
   .panel{
     position:fixed; top:0; bottom:0; right:0; width:86%; max-width:360px;
     background:var(--bg2); z-index:41; transform:translateX(100%);
-    transition:transform 0.25s ease; display:flex; flex-direction:column;
+    transition:transform 0.28s cubic-bezier(0.4,0,0.2,1); display:flex; flex-direction:column;
     box-shadow:-8px 0 24px rgba(0,0,0,0.4);
   }
   .panel.open{transform:translateX(0);}
@@ -175,9 +184,9 @@
 </div>
 
 <footer>
-  <button id="btnPrev">◀ السابقة</button>
-  <input class="pagejump" id="pageJump" inputmode="numeric" value="1">
   <button id="btnNext">التالية ▶</button>
+  <input class="pagejump" id="pageJump" inputmode="numeric" value="1">
+  <button id="btnPrev">◀ السابقة</button>
 </footer>
 
 <div class="panel-overlay" id="overlay"></div>
@@ -212,7 +221,15 @@
   function pad(n){ return String(n).padStart(3,'0'); }
 
   function render(save){
-    img.src = 'images/page-' + pad(current) + '.jpg';
+    var newSrc = 'images/page-' + pad(current) + '.jpg';
+    if(img.src.indexOf(newSrc) === -1){
+      img.classList.add('leaving');
+      setTimeout(function(){
+        img.src = newSrc;
+      }, 90);
+    } else {
+      img.src = newSrc;
+    }
     indicator.textContent = current + ' / ' + total;
     jumpInput.value = current;
     btnPrev.disabled = current <= 1;
@@ -232,9 +249,9 @@
   btnNext.addEventListener('click', goNext);
   btnPrev.addEventListener('click', goPrev);
 
-  // Tap zones: in RTL, right side = start/previous page, left side = forward/next page
-  document.getElementById('zoneRight').addEventListener('click', goPrev);
-  document.getElementById('zoneLeft').addEventListener('click', goNext);
+  // Tap zones: right side = next page, left side = previous page
+  document.getElementById('zoneRight').addEventListener('click', goNext);
+  document.getElementById('zoneLeft').addEventListener('click', goPrev);
 
   jumpInput.addEventListener('change', function(){
     var n = parseInt(jumpInput.value);
@@ -253,7 +270,7 @@
     var dx = e.changedTouches[0].clientX - startX;
     var dy = e.changedTouches[0].clientY - startY;
     if(Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)*1.5){
-      if(dx < 0) goNext(); else goPrev();
+      if(dx > 0) goNext(); else goPrev();
     }
     startX = null; startY = null;
   }, {passive:true});
@@ -392,6 +409,7 @@
     i.src = 'images/page-' + pad(n) + '.jpg';
   }
   img.addEventListener('load', function(){
+    img.classList.remove('leaving');
     preload(current+1); preload(current-1);
     loading.style.display = 'none';
   });
